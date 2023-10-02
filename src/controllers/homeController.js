@@ -2,10 +2,22 @@ import pool from "../configs/connectDB.js";
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
 
+const postToCart = async (req, res) => {
+    try {
+        const [rows, fields] = await pool.execute(`SELECT * FROM orders`)
+        console.log(rows);
+        const { status, userId, products, address, phone } = req.body
+        await pool.execute(`INSERT INTO orders(status, userId, products, address, phone) VALUES(?, ?, ?, ?, ?)`, [status, userId, products, address, phone])
+        return res.status(200).json({
+            message: 'Success'
+        })
+    } catch (error) {
+
+    }
+}
 const getProduct = async (req, res) => {
     try {
         const [rows, fields] = await pool.execute(`SELECT * FROM products`)
-        console.log('rows', rows);
         return res.status(200).json({
             data: rows
         })
@@ -45,7 +57,6 @@ const login = async (req, res) => {
     try {
 
         const [rows, fields] = await pool.execute(`SELECT * FROM accounts WHERE username = ?`, [req.body.username])
-        console.log(`username nè`, rows);
         if (rows.length === 0) {
             return res.status(404).json({
                 message: ' Cannot find this username'
@@ -77,9 +88,43 @@ const logout = async (req, res) => {
         sameSite: "none"
     }).status(200).json("User has been logged out")
 }
+const getOrders = async (req, res) => {
+    try {
+        const [rows, fields] = await pool.execute('SELECT * FROM orders');
+        const filteredProducts = [];
+
+        rows.forEach(order => {
+            const productArray = JSON.parse(order.products);
+
+            if (Array.isArray(productArray)) {
+                // Chỉ lấy productId và quantity từ mảng products
+                const filteredOrder = {
+                    ...order,
+                    products: productArray.map(product => ({
+                        productId: product.productId,
+                        quantity: product.quantity
+                    }))
+                };
+                // Thêm các sản phẩm vào mảng filteredProducts
+                filteredProducts.push(filteredOrder);
+            }
+        });
+
+        return res.status(200).json({
+            data: filteredProducts
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Internal Server Error'
+        });
+    }
+}
 export default {
     register,
     login,
     logout,
-    getProduct
+    getProduct,
+    postToCart,
+    getOrders
 }

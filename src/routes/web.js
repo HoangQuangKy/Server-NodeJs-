@@ -11,6 +11,8 @@ const intWebRouter = (app) => {
     router.post('/login', homeController.login);
     router.get('/logout', homeController.logout)
     router.get('/products', homeController.getProduct)
+    router.post('/create-newOrder', homeController.postToCart)
+    router.get('/getOrder', homeController.getOrders)
     return app.use('/', router);
 }
 
